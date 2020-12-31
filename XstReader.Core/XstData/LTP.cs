@@ -2,23 +2,23 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
+using XstReader.Utils;
 using XstReader.Utils.BTree;
-using XstReader.XstData.Layouts.Common.LTP;
-using XstReader.XstData.Layouts.Common.NDB;
-using XstReader.XstData.Layouts.Common.Structures.TableContext;
-using XstReader.XstData.Layouts.Common.Structures.PropertyContext;
-using XstReader.XstData.Layouts.Common.Structures.BTreeOnHeap;
-using XstReader.XstData.Layouts.Common.Structures.Page;
 using XstReader.XstData.Layouts.ANSI.LTP;
 using XstReader.XstData.Layouts.ANSI.NDB;
+using XstReader.XstData.Layouts.Common.LTP;
+using XstReader.XstData.Layouts.Common.NDB;
+using XstReader.XstData.Layouts.Common.Structures.BTreeOnHeap;
+using XstReader.XstData.Layouts.Common.Structures.Page;
+using XstReader.XstData.Layouts.Common.Structures.PropertyContext;
+using XstReader.XstData.Layouts.Common.Structures.TableContext;
 using XstReader.XstData.Layouts.Unicode.LTP;
-using XstReader.XstData.Layouts.Unicode4K.NDB;
 using XstReader.XstData.Layouts.Unicode.NDB;
-using XstReader.Utils;
+using XstReader.XstData.Layouts.Unicode4K.NDB;
 using XstReader.XstData.Properties;
 
 namespace XstReader.XstData
@@ -61,15 +61,15 @@ namespace XstReader.XstData
         {
             BTree<Node> subNodeTree;
             var rn = ndb.LookupNodeAndReadItsSubNodeBtree(fs, nid, out subNodeTree);
-
-            ReadPropertiesInternal<T>(fs, subNodeTree, rn.DataBid, g, target);
+            if (g.Any())
+                ReadPropertiesInternal<T>(fs, subNodeTree, rn.DataBid, g, target);
 
             return subNodeTree;
         }
 
         // Second form takes a node ID for a node in the supplied sub node tree
         // An optional switch can be used to indicate that the property values are stored in the child node tree of the supplied node tree
-        public BTree<Node> ReadProperties<T>(FileStream fs, BTree<Node> subNodeTree, NID nid, PropertyGetters<T> g, T target, bool propertyValuesInChildNodeTree = false )
+        public BTree<Node> ReadProperties<T>(FileStream fs, BTree<Node> subNodeTree, NID nid, PropertyGetters<T> g, T target, bool propertyValuesInChildNodeTree = false)
         {
             BTree<Node> childSubNodeTree;
             var rn = ndb.LookupSubNodeAndReadItsSubNodeBtree(fs, subNodeTree, nid, out childSubNodeTree);
@@ -90,6 +90,9 @@ namespace XstReader.XstData
 
             return ReadAllPropertiesInternal(fs, subNodeTree, rn.DataBid, excluding);
         }
+        public Property ReadProperty(FileStream fs, NID nid, EpropertyTag tag)
+            => ReadProperties(fs, nid, new List<EpropertyTag> { tag }).FirstOrDefault();
+
         public IEnumerable<Property> ReadProperties(FileStream fs, NID nid, List<EpropertyTag> included)
         {
             BTree<Node> subNodeTree;
@@ -174,7 +177,7 @@ namespace XstReader.XstData
 
             foreach (var prop in props)
             {
-                 if (!g.ContainsKey(prop.wPropId))
+                if (!g.ContainsKey(prop.wPropId))
                     continue;
 
                 dynamic val = ReadPropertyValue(fs, subNodeTree, blocks, prop);
@@ -190,9 +193,9 @@ namespace XstReader.XstData
                 throw new XstException("Was expecting a PC");
 
             // Read the index of properties
-            var props = ReadBTHIndex<PCBTH>(blocks, h.hidUserRoot).ToArray();
+            var props = ReadBTHIndex<PCBTH>(blocks, h.hidUserRoot).Where(p => included.Contains(p.wPropId));
 
-            foreach (var prop in props.Where(p=> included.Contains(p.wPropId)))
+            foreach (var prop in props)
             {
                 dynamic val = ReadPropertyValue(fs, subNodeTree, blocks, prop);
 
@@ -200,8 +203,12 @@ namespace XstReader.XstData
 
                 yield return p;
             }
-
             yield break;
+
+            //return ReadBTHIndex<PCBTH>(blocks, h.hidUserRoot)
+            //                   .Where(p => included.Contains(p.wPropId))
+            //                   .Select(prop => CreatePropertyObject(fs, prop.wPropId, ReadPropertyValue(fs, subNodeTree, blocks, prop)))
+            //                   .Cast<Property>();
         }
 
         // Common implementation of property reading takes a data ID for a block in the main block tree
@@ -224,7 +231,7 @@ namespace XstReader.XstData
 
                 Property p = CreatePropertyObject(fs, prop.wPropId, val);
 
-                yield return p; 
+                yield return p;
             }
 
             yield break;
@@ -269,7 +276,7 @@ namespace XstReader.XstData
                     if (buf == null)
                         val = "<Could not read MultipleInteger32 value>";
                     else
-                        val = Map.MapArray<Int32>(buf, 0, buf.Length/sizeof(Int32));
+                        val = Map.MapArray<Int32>(buf, 0, buf.Length / sizeof(Int32));
                     break;
 
                 case EpropertyType.PtypBoolean:
@@ -348,10 +355,10 @@ namespace XstReader.XstData
                                     len = buf.Length - (int)offsets[i];
 
                                 ss[i] = Encoding.Unicode.GetString(buf, (int)offsets[i], len);
-                                }
-                                val = ss;
                             }
+                            val = ss;
                         }
+                    }
                     break;
 
                 case EpropertyType.PtypMultipleBinary:
@@ -515,8 +522,8 @@ namespace XstReader.XstData
             {
                 int blockNum = (int)(index.dwRowIndex / rowsPerBlock);
                 if (blockNum >= dataBlocks.Count)
-                      throw new XstException("Data block number out of bounds");
- 
+                    throw new XstException("Data block number out of bounds");
+
                 var db = dataBlocks[blockNum];
 
                 long rowOffset = db.Offset + (index.dwRowIndex % rowsPerBlock) * t.rgibTCI_bm;
@@ -751,7 +758,7 @@ namespace XstReader.XstData
 
         // Read a heap on node data structure. The division of data into blocks is preserved,
         // because references into it have two parts: block index, and offset within block
-        private List<HNDataBlock> ReadHeapOnNode(FileStream fs, UInt64 dataBid) 
+        private List<HNDataBlock> ReadHeapOnNode(FileStream fs, UInt64 dataBid)
         {
             var blocks = new List<HNDataBlock>();
 

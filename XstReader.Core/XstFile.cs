@@ -43,34 +43,34 @@ namespace XstReader
         // When reading folder contents, the message properties we ask for
         private static readonly PropertyGetters<Message> pgMessageList = new PropertyGetters<Message>
         {
-            {EpropertyTag.PidTagSubjectW, (m, val) => m.Subject = val },
-            {EpropertyTag.PidTagDisplayCcW, (m, val) => m.Cc = val },
-            {EpropertyTag.PidTagDisplayToW, (m, val) => m.To = val },
+            //{EpropertyTag.PidTagSubjectW, (m, val) => m.Subject = val },
+            //{EpropertyTag.PidTagDisplayCcW, (m, val) => m.Cc = val },
+            //{EpropertyTag.PidTagDisplayToW, (m, val) => m.To = val },
             {EpropertyTag.PidTagMessageFlags, (m, val) => m.Flags = (MessageFlags)val },
-            {EpropertyTag.PidTagSentRepresentingNameW, (m, val) => m.From = val },
-            {EpropertyTag.PidTagClientSubmitTime, (m, val) => m.Submitted = val },
-            {EpropertyTag.PidTagMessageDeliveryTime, (m, val) => m.Received = val },
-            {EpropertyTag.PidTagLastModificationTime, (m, val) => m.Modified = val },
+            //{EpropertyTag.PidTagSentRepresentingNameW, (m, val) => m.From = val },
+            //{EpropertyTag.PidTagClientSubmitTime, (m, val) => m.Submitted = val },
+            //{EpropertyTag.PidTagMessageDeliveryTime, (m, val) => m.Received = val },
+            //{EpropertyTag.PidTagLastModificationTime, (m, val) => m.Modified = val },
         };
 
         // When reading folder contents, the message properties we ask for
         // In Unicode4K, PidTagSentRepresentingNameW doesn't yield a useful value
         private static readonly PropertyGetters<Message> pgMessageList4K = new PropertyGetters<Message>
         {
-            {EpropertyTag.PidTagSubjectW, (m, val) => m.Subject = val },
-            {EpropertyTag.PidTagDisplayCcW, (m, val) => m.Cc = val },
-            {EpropertyTag.PidTagDisplayToW, (m, val) => m.To = val },
+            //{EpropertyTag.PidTagSubjectW, (m, val) => m.Subject = val },
+            //{EpropertyTag.PidTagDisplayCcW, (m, val) => m.Cc = val },
+            //{EpropertyTag.PidTagDisplayToW, (m, val) => m.To = val },
             {EpropertyTag.PidTagMessageFlags, (m, val) => m.Flags = (MessageFlags)val },
-            {EpropertyTag.PidTagClientSubmitTime, (m, val) => m.Submitted = val },
-            {EpropertyTag.PidTagMessageDeliveryTime, (m, val) => m.Received = val },
-            {EpropertyTag.PidTagLastModificationTime, (m, val) => m.Modified = val },
+            //{EpropertyTag.PidTagClientSubmitTime, (m, val) => m.Submitted = val },
+            //{EpropertyTag.PidTagMessageDeliveryTime, (m, val) => m.Received = val },
+            //{EpropertyTag.PidTagLastModificationTime, (m, val) => m.Modified = val },
         };
 
         private static readonly PropertyGetters<Message> pgMessageDetail4K = new PropertyGetters<Message>
         {
-            {EpropertyTag.PidTagSentRepresentingNameW, (m, val) => m.From = val },
-            {EpropertyTag.PidTagSentRepresentingEmailAddress, (m, val) => { if(m.From == null) m.From = val; } },
-            {EpropertyTag.PidTagSenderName, (m, val) => { if(m.From == null) m.From = val; } },
+            //{EpropertyTag.PidTagSentRepresentingNameW, (m, val) => m.From = val },
+            //{EpropertyTag.PidTagSentRepresentingEmailAddress, (m, val) => { if(m.From == null) m.From = val; } },
+            //{EpropertyTag.PidTagSenderName, (m, val) => { if(m.From == null) m.From = val; } },
         };
 
         // The properties we read when accessing the contents of a message
@@ -96,14 +96,14 @@ namespace XstReader
         //The properties we read when accessing a message attached to a message
         private static readonly PropertyGetters<Message> pgMessageAttachment = new PropertyGetters<Message>
         {
-            {EpropertyTag.PidTagSubjectW, (m, val) => m.Subject = val },
-            {EpropertyTag.PidTagDisplayCcW, (m, val) => m.Cc = val },
-            {EpropertyTag.PidTagDisplayToW, (m, val) => m.To = val },
+            //{EpropertyTag.PidTagSubjectW, (m, val) => m.Subject = val },
+            //{EpropertyTag.PidTagDisplayCcW, (m, val) => m.Cc = val },
+            //{EpropertyTag.PidTagDisplayToW, (m, val) => m.To = val },
             {EpropertyTag.PidTagMessageFlags, (m, val) => m.Flags = (MessageFlags)val },
-            {EpropertyTag.PidTagSentRepresentingNameW, (m, val) => m.From = val },
-            {EpropertyTag.PidTagClientSubmitTime, (m, val) => m.Submitted = val },
-            {EpropertyTag.PidTagMessageDeliveryTime, (m, val) => m.Received = val },
-            {EpropertyTag.PidTagLastModificationTime, (m, val) => m.Modified = val },
+            //{EpropertyTag.PidTagSentRepresentingNameW, (m, val) => m.From = val },
+            //{EpropertyTag.PidTagClientSubmitTime, (m, val) => m.Submitted = val },
+            //{EpropertyTag.PidTagMessageDeliveryTime, (m, val) => m.Received = val },
+            //{EpropertyTag.PidTagLastModificationTime, (m, val) => m.Modified = val },
             {EpropertyTag.PidTagNativeBody, (m, val) => m.NativeBody = (BodyType)val },
             {EpropertyTag.PidTagBody, (m, val) => m.Body = val },
             {EpropertyTag.PidTagHtml, (m, val) => { if (val is string)  m.BodyHtml = val; else m.Html = val; } },
@@ -188,7 +188,7 @@ namespace XstReader
                     var ms = ltp.ReadTable<Message>(fs, NID.TypedNID(EnidType.CONTENTS_TABLE, f.Nid),
                                                     ndb.IsUnicode4K ? pgMessageList4K : pgMessageList, (m, id) => m.Nid = new NID(id))
                                 .Select(m => ndb.IsUnicode4K ? Add4KMessageProperties(fs, m) : m)
-                                .Select(m => ReadCommonProperties(m))
+                                //.Select(m => ReadCommonProperties(m))
                                 .Select(m => f.AddMessage(m))
                                 .ToList(); // to force complete execution on the current thread
                     return ms;
@@ -196,25 +196,49 @@ namespace XstReader
             }
             return new List<Message>();
         }
-        private Message ReadCommonProperties(Message m)
-        {
-            List<EpropertyTag> included = new List<EpropertyTag>
-            {
-                (EpropertyTag)0x001a,        //"MessageClass"
-                (EpropertyTag)0x0017,        //"Importance"
-                (EpropertyTag)0x0060,        //"StartDate"
-                (EpropertyTag)0x0061,        //"EndDate"
-            };
-            using (var fs = ndb.GetReadStream())
-            {
-                //// Read the contents properties
-                //ltp.ReadProperties<Message>(fs, m.Nid, pgMessageContent, m);
+        //ILUVADED
+        //private Message ReadCommonProperties(Message m)
+        //{
+        //    List<EpropertyTag> included = new List<EpropertyTag>
+        //    {
+        //        (EpropertyTag)0x001a,        //"MessageClass"
+        //        (EpropertyTag)0x0017,        //"Importance"
+        //        (EpropertyTag)0x0060,        //"StartDate"
+        //        (EpropertyTag)0x0061,        //"EndDate"
+        //    };
+        //    using (var fs = ndb.GetReadStream())
+        //    {
+        //        //// Read the contents properties
+        //        //ltp.ReadProperties<Message>(fs, m.Nid, pgMessageContent, m);
 
-                // Read all other properties
-                m.Properties.Clear();
-                m.Properties.AddRange(ltp.ReadProperties(fs, m.Nid, included).ToList());
-            }
-            return m;
+        //        // Read all other properties
+        //        m.Properties.Clear();
+        //        m.Properties.AddRange(ltp.ReadProperties(fs, m.Nid, included).ToList());
+        //    }
+        //    return m;
+        //}
+
+        internal Property ReadProperty(Element e, EpropertyTag tag)
+        {
+            using (var fs = ndb.GetReadStream())
+                return ReadProperty(fs, e, tag);
+        }
+        internal Property ReadProperty(FileStream fs, Element e, EpropertyTag tag)
+        {
+            //TODO: Check if Attachment and needs SubNodeTree
+            return ltp.ReadProperty(fs, e.Nid, tag);
+        }
+        internal List<Property> ReadPropertiesExcluding(Element e, IEnumerable<EpropertyTag> excludedTags)
+        {
+            using (var fs = ndb.GetReadStream())
+                return ReadPropertiesExcluding(fs, e, excludedTags);
+        }
+        internal List<Property> ReadPropertiesExcluding(FileStream fs, Element e, IEnumerable<EpropertyTag> excludedTags)
+        {
+            var excluded = new HashSet<EpropertyTag>(contentExclusions.Union(excludedTags));
+            //TODO: Check if Attachment and needs SubNodeTree
+
+            return ltp.ReadAllProperties(fs, e.Nid, excluded).ToList();
         }
 
         public void ReadMessageDetails(Message m)
@@ -224,11 +248,12 @@ namespace XstReader
                 // Read the contents properties
                 var subNodeTree = ltp.ReadProperties<Message>(fs, m.Nid, pgMessageContent, m);
 
-                // Read all other properties
-                m.Properties.Clear();
-                m.Properties.AddRange(ltp.ReadAllProperties(fs, m.Nid, contentExclusions).ToList());
+                //ILUVADED
+                //// Read all other properties
+                //m.Properties.Clear();
+                //m.Properties.AddRange(ltp.ReadAllProperties(fs, m.Nid, contentExclusions).ToList());
 
-                ReadMessageTables(fs, subNodeTree, m);
+                ReadMessageTables(fs, subNodeTree, m); //Recipients
             }
         }
 
@@ -333,8 +358,9 @@ namespace XstReader
                     // Read the basic and contents properties
                     var childSubNodeTree = ltp.ReadProperties<Message>(fs, subNodeTreeAttachment, m.Nid, pgMessageAttachment, m, true);
 
-                    // Read all other properties
-                    m.Properties.AddRange(ltp.ReadAllProperties(fs, subNodeTreeAttachment, m.Nid, contentExclusions, true).ToList());
+                    //ILUVADED
+                    //// Read all other properties
+                    //m.Properties.AddRange(ltp.ReadAllProperties(fs, subNodeTreeAttachment, m.Nid, contentExclusions, true).ToList());
 
                     ReadMessageTables(fs, childSubNodeTree, m, true);
 

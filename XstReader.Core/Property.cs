@@ -13,8 +13,6 @@ using XstReader.XstData.Properties;
 namespace XstReader
 {
  
-
-
     public class Property
     {
         internal EpropertyTag Tag { get; set; }
