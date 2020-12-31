@@ -126,9 +126,9 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="Extensions.cs" />
     <Compile Include="FolderView.cs" />
     <Compile Include="MessageView.cs" />
+    <Compile Include="ObservableCollectionExtensions\PopulateWith.cs" />
     <Compile Include="SearchTextBox\ListBoxEx.cs" />
     <Compile Include="SearchTextBox\SearchTextBox.cs" />
     <Compile Include="SortAdorner.cs" />

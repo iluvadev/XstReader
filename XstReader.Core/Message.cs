@@ -12,12 +12,16 @@ using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Documents;
 using System.Windows.Media;
+using XstReader.Utils;
+using XstReader.XstData.Layouts.Common;
+using XstReader.XstData.Layouts.Common.NDB;
+using XstReader.XstData.Properties;
 
 namespace XstReader
 {
     // Holds information about a single message, extracted from the xst tables
 
-    public class Message
+    public class Message 
     {
         private string exportFileName = null;
 
@@ -32,12 +36,12 @@ namespace XstReader
         public DateTime? Modified { get; set; }  // When any attachment was last modified
         public DateTime? Date { get { return Received ?? Submitted; } }
         public string DisplayDate { get { return Date != null ? ((DateTime)Date).ToString("g") : "<unknown>"; } }
-        internal NID Nid { get; set; }
         internal BodyType NativeBody { get; set; }
         public string Body { get; set; }
         public string BodyHtml { get; set; }
         public byte[] Html { get; set; }
         public byte[] RtfCompressed { get; set; }
+        internal NID Nid { get; set; }  // Where element data is held
         public List<Attachment> Attachments { get; private set; } = new List<Attachment>();
         public List<Recipient> Recipients { get; private set; } = new List<Recipient>();
         public List<Property> Properties { get; private set; } = new List<Property>();

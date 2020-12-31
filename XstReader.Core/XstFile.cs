@@ -6,8 +6,11 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
-
-
+using XstReader.Utils.BTree;
+using XstReader.XstData;
+using XstReader.XstData.Layouts.Common.NDB;
+using XstReader.XstData.Layouts.Common.Structures.TableContext;
+using XstReader.XstData.Properties;
 
 namespace XstReader
 {
@@ -21,7 +24,7 @@ namespace XstReader
     // - Read the contents of a message
     // - Save an attachment to a message
 
-    public class XstFile
+    public partial class XstFile
     {
         private NDB ndb;
         private LTP ltp;
@@ -185,12 +188,33 @@ namespace XstReader
                     var ms = ltp.ReadTable<Message>(fs, NID.TypedNID(EnidType.CONTENTS_TABLE, f.Nid),
                                                     ndb.IsUnicode4K ? pgMessageList4K : pgMessageList, (m, id) => m.Nid = new NID(id))
                                 .Select(m => ndb.IsUnicode4K ? Add4KMessageProperties(fs, m) : m)
+                                .Select(m => ReadCommonProperties(m))
                                 .Select(m => f.AddMessage(m))
                                 .ToList(); // to force complete execution on the current thread
                     return ms;
                 }
             }
             return new List<Message>();
+        }
+        private Message ReadCommonProperties(Message m)
+        {
+            List<EpropertyTag> included = new List<EpropertyTag>
+            {
+                (EpropertyTag)0x001a,        //"MessageClass"
+                (EpropertyTag)0x0017,        //"Importance"
+                (EpropertyTag)0x0060,        //"StartDate"
+                (EpropertyTag)0x0061,        //"EndDate"
+            };
+            using (var fs = ndb.GetReadStream())
+            {
+                //// Read the contents properties
+                //ltp.ReadProperties<Message>(fs, m.Nid, pgMessageContent, m);
+
+                // Read all other properties
+                m.Properties.Clear();
+                m.Properties.AddRange(ltp.ReadProperties(fs, m.Nid, included).ToList());
+            }
+            return m;
         }
 
         public void ReadMessageDetails(Message m)
@@ -322,11 +346,7 @@ namespace XstReader
         }
 
 
-        private struct LineProp
-        {
-            public int line;
-            public Property p;
-        }
+
 
         public void ExportMessageProperties(IEnumerable<Message> messages, string fileName)
         {
@@ -389,7 +409,7 @@ namespace XstReader
                         // After that, output the column value if it has one
                         else if (q.Count > 0 && q.Peek().line == line)
                             AddCsvValue(sb, q.Dequeue().p.DisplayValue, ref hasValue);
-                        
+
                         // Or leave it blank
                         else
                             AddCsvValue(sb, "", ref hasValue);
@@ -418,6 +438,57 @@ namespace XstReader
                                   .Select(id => ReadFolderStructure(fs, id, f))
                                   .OrderBy(sf => sf.Name)
                                   .ToList());
+
+            //IEPA!! Afegir propietats a la carpeta!
+            List<EpropertyTag> included = new List<EpropertyTag>
+            {
+                (EpropertyTag)0x001a, // MessageClass
+                (EpropertyTag)0x0017, // Importance
+                (EpropertyTag)0x0060, // StartDate
+                (EpropertyTag)0x0061, // EndDate
+                (EpropertyTag)0x3007, // CreationTime
+                (EpropertyTag)0x3008, // LastModificationTime
+                (EpropertyTag)0x3613, // ContainerClass 
+
+            };
+            /* https://docs.microsoft.com/en-us/openspecs/exchange_server_protocols/ms-oxosfld/68a85898-84fe-43c4-b166-4711c13cdd61
+             * (EpropertyTag)0x3613: (Description is null) ContainerClass:
+             *      Observed values: 
+             *          IPF (?)
+             *          IPF.Note (mail)
+             *          IPF.Note.OutlookHomepage (mail: rss feed message)
+             *          IPF.Configuration (setting)
+             *          IPF.Appointment (calendar)
+             *          IPF.Appointment.Birthday (calendar.birthdays)
+             *          IPF.Contact (contact)
+             *          IPF.Contact.Company (contact: enterprises)
+             *          IPF.Contact.RecipientCache (contact: cache)
+             *          IPF.Contact.MOC.QuickContacts (contact: Quick Contacts)
+             *          IPF.Contact.MOC.ImContactList (contact: IM Contacts List)
+             *          IPF.Contact.PeopleCentricConversationBuddies
+             *          IPF.Contact.OrganizationalContacts (contact: Organization)
+             *          IPF.Contact.GalContacts
+             *          IPF.ShortcutFolder (shared location)
+             *          IPF.Journal (journal)
+             *          IPF.StickyNote (note)
+             *          IPF.SkypeTeams.Message (Skype message)
+             *          IPF.Task (task)
+             *          IPF.Files (file)
+             *          Outlook.Reminder (Outlook reminder)
+             *          
+             *  -> FolderType:
+             *          if(string.IsNullOrEmpty(value)||!value.Contains(".")) 
+             *              folderType = "Unknown";
+             *          else
+             *              sContinerClasses = value.Split('.');
+             *              folderType = sContainerClasses[1];
+             *              folderSubType = sContainerClasses[sContainerClasses.Length-1];
+             */
+            //// Read the contents properties
+            //ltp.ReadProperties<Message>(fs, m.Nid, pgMessageContent, m);
+            // Read all other properties
+            var props1 = ltp.ReadProperties(fs, f.Nid, included).ToList();
+            var props2 = ltp.ReadAllProperties(fs, f.Nid, contentExclusions).ToList();
             return f;
         }
 
@@ -444,6 +515,7 @@ namespace XstReader
                     r.Properties.Clear();
                     foreach (var p in lp)
                         r.Properties.Add(p);
+                    r.Nid = recipientsNid;
 
                     m.Recipients.Add(r);
                 }
@@ -511,10 +583,5 @@ namespace XstReader
         #endregion
     }
 
-    public class XstException : Exception
-    {
-        public XstException(string message) : base(message)
-        {
-        }
-    }
+
 }
