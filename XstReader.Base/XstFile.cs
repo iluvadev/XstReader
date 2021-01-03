@@ -163,13 +163,28 @@ namespace XstReader
             this.ltp = new LTP(ndb);
         }
 
+        private bool KeepFileStreamOpened = false;
+        public XstFile(FileStream fileStream)
+        {
+            this.ndb = new NDB(fileStream);
+            KeepFileStreamOpened = true;
+            this.ltp = new LTP(ndb);
+        }
+
+
         public Folder ReadFolderTree()
         {
             ndb.Initialise();
 
-            using (var fs = ndb.GetReadStream())
+            var fs = ndb.GetReadStream();
+            try
             {
                 return ReadFolderStructure(fs, new NID(EnidSpecial.NID_ROOT_FOLDER));
+            }
+            finally
+            {
+                if (!KeepFileStreamOpened)
+                    fs.Dispose();
             }
         }
 
@@ -178,7 +193,8 @@ namespace XstReader
             f.Messages.Clear();
             if (f.ContentCount > 0)
             {
-                using (var fs = ndb.GetReadStream())
+                var fs = ndb.GetReadStream();
+                try
                 {
                     // Get the Contents table for the folder
                     // For 4K, not all the properties we want are available in the Contents table, so supplement them from the Message itself
@@ -189,13 +205,19 @@ namespace XstReader
                                 .ToList(); // to force complete execution on the current thread
                     return ms;
                 }
+                finally
+                {
+                    if (!KeepFileStreamOpened)
+                        fs.Dispose();
+                }
             }
             return new List<Message>();
         }
 
         public void ReadMessageDetails(Message m)
         {
-            using (var fs = ndb.GetReadStream())
+            var fs = ndb.GetReadStream();
+            try
             {
                 // Read the contents properties
                 var subNodeTree = ltp.ReadProperties<Message>(fs, m.Nid, pgMessageContent, m);
@@ -206,11 +228,17 @@ namespace XstReader
 
                 ReadMessageTables(fs, subNodeTree, m);
             }
+            finally
+            {
+                if (!KeepFileStreamOpened)
+                    fs.Dispose();
+            }
         }
 
         public List<Property> ReadAttachmentProperties(Attachment a)
         {
-            using (var fs = ndb.GetReadStream())
+            var fs = ndb.GetReadStream();
+            try
             {
                 BTree<Node> subNodeTreeMessage = a.subNodeTreeProperties;
 
@@ -221,6 +249,11 @@ namespace XstReader
                 // Read all non-content properties
                 // Convert to list so that we can dispose the file access
                 return new List<Property>(ltp.ReadAllProperties(fs, subNodeTreeMessage, a.Nid, attachmentContentExclusions, true));
+            }
+            finally
+            {
+                if (!KeepFileStreamOpened)
+                    fs.Dispose();
             }
         }
 
@@ -282,7 +315,8 @@ namespace XstReader
             }
             else
             {
-                using (FileStream fs = ndb.GetReadStream())
+                FileStream fs = ndb.GetReadStream();
+                try
                 {
                     BTree<Node> subNodeTreeMessage = a.subNodeTreeProperties;
 
@@ -311,13 +345,19 @@ namespace XstReader
                         }
                     }
                 }
+                finally
+                {
+                    if (!KeepFileStreamOpened)
+                        fs.Dispose();
+                }
             }
         }
 
         public Message OpenAttachedMessage(Attachment a)
         {
 
-            using (FileStream fs = ndb.GetReadStream())
+            FileStream fs = ndb.GetReadStream();
+            try
             {
                 BTree<Node> subNodeTreeMessage = a.subNodeTreeProperties;
 
@@ -342,6 +382,11 @@ namespace XstReader
                 }
                 else
                     throw new XstException("Unexpected data type for attached message");
+            }
+            finally
+            {
+                if (!KeepFileStreamOpened)
+                    fs.Dispose();
             }
         }
 

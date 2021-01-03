@@ -14,6 +14,8 @@ namespace XstReader
     class NDB
     {
         private string fullName;
+        private FileStream fileStream = null;
+        private bool KeepFileStreamOpened => fileStream != null;
         private EbCryptMethod bCryptMethod;
         private BTree<Node> nodeTree = new BTree<Node>();
         private BTree<DataRef> dataTree = new BTree<DataRef>();
@@ -41,15 +43,22 @@ namespace XstReader
             deferredReadAction = new Action<TreeIntermediate>(p => this.ReadDeferredIndex(p));
         }
 
+        public NDB(FileStream fileStream)
+        {
+            this.fileStream = fileStream;
+            deferredReadAction = new Action<TreeIntermediate>(p => this.ReadDeferredIndex(p));
+        }
+
         // Prepare to read the contents of a file
         public void Initialise()
         {
             ReadHeaderAndIndexes();
         }
-        
+
         // Return a file stream that will allow the caller to read the current file
         public FileStream GetReadStream()
         {
+            if (fileStream != null) return fileStream;
             return new FileStream(fullName, FileMode.Open, FileAccess.Read);
         }
 
@@ -170,14 +179,15 @@ namespace XstReader
         // Read the file header, and the B trees that give us access to nodes and data blocks
         private void ReadHeaderAndIndexes()
         {
-            using (var fs = GetReadStream())
+            var fs = GetReadStream();
+            try
             {
                 var h = Map.ReadType<FileHeader1>(fs);
 
                 if (h.dwMagic != 0x4e444221)
                     throw new XstException("File is not a .ost or .pst file: the magic cookie is missing");
 
-                if (h.wVer == 0x15 || h.wVer == 0x17 )
+                if (h.wVer == 0x15 || h.wVer == 0x17)
                 {
                     var h2 = Map.ReadType<FileHeader2Unicode>(fs);
                     bCryptMethod = h2.bCryptMethod;
@@ -208,12 +218,18 @@ namespace XstReader
                 else
                     throw new XstException("Unrecognised header type");
             }
+            finally
+            {
+                if (!KeepFileStreamOpened)
+                    fs.Dispose();
+            }
         }
 
         // A callback to be used when searching a tree to read part of the index whose loading has been deferred
         private void ReadDeferredIndex(TreeIntermediate inter)
         {
-            using (var fs = GetReadStream())
+            var fs = GetReadStream();
+            try
             {
                 if (IsUnicode4K)
                     ReadBTPageUnicode4K(fs, (ulong)inter.fileOffset, inter);
@@ -224,6 +240,11 @@ namespace XstReader
 
                 // Don't read it again
                 inter.fileOffset = null;
+            }
+            finally
+            {
+                if (!KeepFileStreamOpened)
+                    fs.Dispose();
             }
         }
         // Read a page containing part of a node or data block B-tree, and build the corresponding data structure

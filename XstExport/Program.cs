@@ -134,55 +134,58 @@ namespace XstExport
                         Directory.CreateDirectory(exportDir);
                 }
 
-                var xstFile = new XstFile(outlookFile);
-                var root = xstFile.ReadFolderTree();
-
-                Folder sourceFolder = null;
-                if (outlookFolder != null)
+                using (var outlookfs = new FileStream(outlookFile, FileMode.Open, FileAccess.Read))
                 {
-                    sourceFolder = FindOutlookFolder(root, outlookFolder);
-                    if (sourceFolder == null)
+                    var xstFile = new XstFile(outlookfs);
+                    var root = xstFile.ReadFolderTree();
+
+                    Folder sourceFolder = null;
+                    if (outlookFolder != null)
                     {
-                        throw new XstExportException
+                        sourceFolder = FindOutlookFolder(root, outlookFolder);
+                        if (sourceFolder == null)
                         {
-                            Description = @"Cannot find folder '{outlookFolder}' in '{outlookFile}'",
-                            ErrorCode = WindowsErrorCodes.ERROR_INVALID_PARAMETER
-                        };
+                            throw new XstExportException
+                            {
+                                Description = @"Cannot find folder '{outlookFolder}' in '{outlookFile}'",
+                                ErrorCode = WindowsErrorCodes.ERROR_INVALID_PARAMETER
+                            };
+                        }
                     }
-                }
 
-                // The arguments look good, so prepare to actually export
-                if (exportDir == null)
-                    exportDir = CreateDirectoryIfNeeded(Path.GetDirectoryName(outlookFile),
-                                Path.GetFileNameWithoutExtension(outlookFile) + ".Export." +
-                                Enum.GetName(typeof(Command), command));
+                    // The arguments look good, so prepare to actually export
+                    if (exportDir == null)
+                        exportDir = CreateDirectoryIfNeeded(Path.GetDirectoryName(outlookFile),
+                                    Path.GetFileNameWithoutExtension(outlookFile) + ".Export." +
+                                    Enum.GetName(typeof(Command), command));
 
-                // Work out which folders to export
-                List<Folder> sources = new List<Folder>();
-                if (only)
-                {
-                    sources.Add(sourceFolder ?? root.Folders[0]);
-                }
-                else
-                {
-                    if (sourceFolder != null)
+                    // Work out which folders to export
+                    List<Folder> sources = new List<Folder>();
+                    if (only)
                     {
-                        sources.Add(sourceFolder);
-                        sources.AddRange(sourceFolder.Folders.Flatten(f => f.Folders));
+                        sources.Add(sourceFolder ?? root.Folders[0]);
                     }
                     else
-                        sources.AddRange(root.Folders.Flatten(f => f.Folders));
-                }
+                    {
+                        if (sourceFolder != null)
+                        {
+                            sources.Add(sourceFolder);
+                            sources.AddRange(sourceFolder.Folders.Flatten(f => f.Folders));
+                        }
+                        else
+                            sources.AddRange(root.Folders.Flatten(f => f.Folders));
+                    }
 
-                foreach (var f in sources)
-                {
-                    string targetDir;
-                    if (subfolders)
-                        targetDir = Path.Combine(exportDir, ValidFolderPath(f));
-                    else
-                        targetDir = exportDir;
+                    foreach (var f in sources)
+                    {
+                        string targetDir;
+                        if (subfolders)
+                            targetDir = Path.Combine(exportDir, ValidFolderPath(f));
+                        else
+                            targetDir = exportDir;
 
-                    ExportFolder(xstFile, f, command, targetDir);
+                        ExportFolder(xstFile, f, command, targetDir);
+                    }
                 }
             }
             catch (XstExportException xe)
