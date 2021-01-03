@@ -34,20 +34,24 @@ namespace XstReader
         public DateTime? Submitted => GetProperty(EpropertyTag.PidTagClientSubmitTime)?.Value;
         public DateTime? Modified => GetProperty(EpropertyTag.PidTagLastModificationTime)?.Value;  // When any attachment was last modified
 
-        private string exportFileName = null;
+        private string _BodyHtml = null;
+        public string BodyHtml => _BodyHtml ?? (_BodyHtml = GetProperty(EpropertyTag.PidTagHtml)?.Value as string);
+        public byte[] Html => GetProperty(EpropertyTag.PidTagHtml)?.Value as byte[];
+        public string Body => GetProperty(EpropertyTag.PidTagBody)?.Value;
+        public byte[] RtfCompressed => GetProperty(EpropertyTag.PidTagRtfCompressed)?.Value;
 
 
-
-
+        public string exportFileName = null;
 
 
         public DateTime? Date { get { return Received ?? Submitted; } }
         public string DisplayDate { get { return Date != null ? ((DateTime)Date).ToString("g") : "<unknown>"; } }
+
         internal BodyType NativeBody { get; set; }
-        public string Body { get; set; }
-        public string BodyHtml { get; set; }
-        public byte[] Html { get; set; }
-        public byte[] RtfCompressed { get; set; }
+        
+        
+
+
         public List<Attachment> Attachments { get; private set; } = new List<Attachment>();
         public List<Recipient> Recipients { get; private set; } = new List<Recipient>();
         public bool MayHaveInlineAttachment { get { return (Attachments.FirstOrDefault(a => a.HasContentId) != null); } }
@@ -132,9 +136,13 @@ namespace XstReader
         public void ClearContents()
         {
             // Clear out any previous content   
-            Body = null;
-            BodyHtml = null;
-            Html = null;
+            ElementProperties.ClearProperty(EpropertyTag.PidTagBody);
+
+            _BodyHtml = null;
+            ElementProperties.ClearProperty(EpropertyTag.PidTagHtml);
+
+            ElementProperties.ClearProperty(EpropertyTag.PidTagRtfCompressed);
+
             Attachments.Clear();
         }
 
@@ -422,7 +430,7 @@ namespace XstReader
                     return Encoding.GetEncoding(m.Groups[1].Value);
             }
 
-            p = Properties.FirstOrDefault(x => x.Tag == EpropertyTag.PidTagInternetCodepage);
+            p = GetProperty(EpropertyTag.PidTagInternetCodepage);
             if (p != null)
             {
                 return Encoding.GetEncoding((int)p.Value);
@@ -479,7 +487,7 @@ namespace XstReader
                 //message body
                 if (partHeaders.Keys.Contains("content-type") && partHeaders["content-type"].Trim().Contains("text/html;"))
                 {
-                    BodyHtml = DecodeQuotedPrintable(partHeaders["mimeBody"]);
+                    _BodyHtml = DecodeQuotedPrintable(partHeaders["mimeBody"]);
                     NativeBody = BodyType.HTML;
                 }
                 //real attachments

@@ -57,6 +57,27 @@ namespace XstReader.XstData
         // The returned value is the subnode tree, if any, related to the contents of the properties
         //
         // First form takes a node ID for a node in the main node tree
+        public BTree<Node> ReadProperties<T>(FileStream fs, NID nid, IEnumerable<EpropertyTag> props, T target)
+            where T : Element
+        {
+            BTree<Node> subNodeTree;
+            var rn = ndb.LookupNodeAndReadItsSubNodeBtree(fs, nid, out subNodeTree);
+            var unknownProps = target.ElementProperties.GetUnknownProperties(props);
+            if (unknownProps.Any())
+            {
+                var foundProps = ReadPropertiesInternal(fs, subNodeTree, rn.DataBid, unknownProps).ToList();
+                target.ElementProperties.SetPropertiesVisited(unknownProps);
+                target.ElementProperties.SetProperties(foundProps);
+            }
+            return subNodeTree;
+        }
+
+        // Read the properties in a property context
+        // T is the type of the object to be populated
+        // Property getters must be supplied to map property Ids to members of T
+        // The returned value is the subnode tree, if any, related to the contents of the properties
+        //
+        // First form takes a node ID for a node in the main node tree
         public BTree<Node> ReadProperties<T>(FileStream fs, NID nid, PropertyGetters<T> g, T target)
         {
             BTree<Node> subNodeTree;
@@ -173,19 +194,16 @@ namespace XstReader.XstData
                 throw new XstException("Was expecting a PC");
 
             // Read the index of properties
-            var props = ReadBTHIndex<PCBTH>(blocks, h.hidUserRoot).ToArray();
+            var props = ReadBTHIndex<PCBTH>(blocks, h.hidUserRoot).Where(p => g.ContainsKey(p.wPropId));
 
             foreach (var prop in props)
             {
-                if (!g.ContainsKey(prop.wPropId))
-                    continue;
-
                 dynamic val = ReadPropertyValue(fs, subNodeTree, blocks, prop);
                 g[prop.wPropId](target, val);
             }
         }
 
-        private IEnumerable<Property> ReadPropertiesInternal(FileStream fs, BTree<Node> subNodeTree, UInt64 dataBid, List<EpropertyTag> included)
+        private IEnumerable<Property> ReadPropertiesInternal(FileStream fs, BTree<Node> subNodeTree, UInt64 dataBid, IEnumerable<EpropertyTag> included)
         {
             var blocks = ReadHeapOnNode(fs, dataBid);
             var h = blocks.First();
@@ -205,10 +223,6 @@ namespace XstReader.XstData
             }
             yield break;
 
-            //return ReadBTHIndex<PCBTH>(blocks, h.hidUserRoot)
-            //                   .Where(p => included.Contains(p.wPropId))
-            //                   .Select(prop => CreatePropertyObject(fs, prop.wPropId, ReadPropertyValue(fs, subNodeTree, blocks, prop)))
-            //                   .Cast<Property>();
         }
 
         // Common implementation of property reading takes a data ID for a block in the main block tree
@@ -220,13 +234,10 @@ namespace XstReader.XstData
                 throw new XstException("Was expecting a PC");
 
             // Read the index of properties
-            var props = ReadBTHIndex<PCBTH>(blocks, h.hidUserRoot).ToArray();
+            var props = ReadBTHIndex<PCBTH>(blocks, h.hidUserRoot).Where(p => excluding == null || !excluding.Contains(p.wPropId));
 
             foreach (var prop in props)
             {
-                if (excluding != null && excluding.Contains(prop.wPropId))
-                    continue;
-
                 dynamic val = ReadPropertyValue(fs, subNodeTree, blocks, prop);
 
                 Property p = CreatePropertyObject(fs, prop.wPropId, val);

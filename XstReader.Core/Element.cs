@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using XstReader.Utils.BTree;
 using XstReader.XstData.Layouts.Common.NDB;
 using XstReader.XstData.Properties;
 
@@ -12,44 +11,16 @@ namespace XstReader
         internal virtual XstFile XstFile { get; }
         internal NID Nid { get; set; }  // Where element data is held
 
-        private List<EpropertyTag> NotFoundProperties { get; } = new List<EpropertyTag>();
-        private Dictionary<EpropertyTag, Property> DictProperties { get; } = new Dictionary<EpropertyTag, Property>();
-        private bool _AllProperties = false;
+        internal ElementProperties ElementProperties { get; }
+        public List<Property> Properties => ElementProperties.Properties;
+        internal Property GetProperty(EpropertyTag tag) => ElementProperties.GetProperty(tag);
+        public Property GetProperty(UInt16 tag) => GetProperty((EpropertyTag)tag);
 
-        //Asking for Properties forces Read pending properties
-        public List<Property> Properties
+        public Element()
         {
-            get
-            {
-                if (!_AllProperties)
-                {
-                    var props = XstFile.ReadPropertiesExcluding(this, NotFoundProperties.Union(DictProperties.Keys));
-                    foreach (var prop in props)
-                        DictProperties.Add(prop.Tag, prop);
-                    _AllProperties = true;
-                }
-                return DictProperties.Values.ToList();
-            }
+            ElementProperties = new ElementProperties(this);
         }
 
-        public Property GetProperty(UInt16 tag)
-            => GetProperty((EpropertyTag)tag);
 
-        internal Property GetProperty(EpropertyTag tag)
-        {
-            if (!DictProperties.ContainsKey(tag) && !NotFoundProperties.Contains(tag) && !_AllProperties)
-            {
-                //Find property. If found -> DicProperties.Add; Else -> NotFoundProperties.Add
-                var prop = XstFile.ReadProperty(this, tag);
-                if (prop != null)
-                    DictProperties.Add(tag, prop);
-                else
-                    NotFoundProperties.Add(tag);
-                return prop;
-            }
-            if (DictProperties.ContainsKey(tag))
-                return DictProperties[tag];
-            return null;
-        }
     }
 }

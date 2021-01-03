@@ -2,17 +2,13 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
-using XstReader.Utils.BTree;
 using XstReader.XstData;
-using XstReader.XstData.Layouts.Common;
-using XstReader.XstData.Layouts.Common.NDB;
 using XstReader.XstData.Properties;
 
 namespace XstReader
 {
- 
+
     public class Property
     {
         internal EpropertyTag Tag { get; set; }
@@ -115,6 +111,6 @@ namespace XstReader
         }
     }
 
- 
+
 
 }

@@ -49,6 +49,7 @@
   <ItemGroup>
     <Compile Include="Attachment.cs" />
     <Compile Include="Element.cs" />
+    <Compile Include="ElementProperties.cs" />
     <Compile Include="Recipient.cs" />
     <Compile Include="Utils\BTree\BTree[T].cs" />
     <Compile Include="Utils\BTree\DataRef.cs" />

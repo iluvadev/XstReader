@@ -39,6 +39,9 @@ namespace XstReader
             // Don't bother reading HasSubFolders, because it is not always set
             // {EpropertyTag.PidTagSubfolders, (f, val) => f.HasSubFolders = val },
         };
+        private static readonly HashSet<EpropertyTag> propFolder = new HashSet<EpropertyTag>
+        {
+        };
 
         // When reading folder contents, the message properties we ask for
         private static readonly PropertyGetters<Message> pgMessageList = new PropertyGetters<Message>
@@ -51,6 +54,17 @@ namespace XstReader
             //{EpropertyTag.PidTagClientSubmitTime, (m, val) => m.Submitted = val },
             //{EpropertyTag.PidTagMessageDeliveryTime, (m, val) => m.Received = val },
             //{EpropertyTag.PidTagLastModificationTime, (m, val) => m.Modified = val },
+        };
+        private static readonly HashSet<EpropertyTag> propMessageList = new HashSet<EpropertyTag>
+        {
+            EpropertyTag.PidTagSubjectW,
+            EpropertyTag.PidTagDisplayCcW,
+            EpropertyTag.PidTagDisplayToW, 
+            EpropertyTag.PidTagMessageFlags, 
+            EpropertyTag.PidTagSentRepresentingNameW, 
+            EpropertyTag.PidTagClientSubmitTime,
+            EpropertyTag.PidTagMessageDeliveryTime,
+            EpropertyTag.PidTagLastModificationTime, 
         };
 
         // When reading folder contents, the message properties we ask for
@@ -65,24 +79,51 @@ namespace XstReader
             //{EpropertyTag.PidTagMessageDeliveryTime, (m, val) => m.Received = val },
             //{EpropertyTag.PidTagLastModificationTime, (m, val) => m.Modified = val },
         };
-
-        private static readonly PropertyGetters<Message> pgMessageDetail4K = new PropertyGetters<Message>
+        private static readonly HashSet<EpropertyTag> propMessageList4K = new HashSet<EpropertyTag>
         {
-            //{EpropertyTag.PidTagSentRepresentingNameW, (m, val) => m.From = val },
-            //{EpropertyTag.PidTagSentRepresentingEmailAddress, (m, val) => { if(m.From == null) m.From = val; } },
-            //{EpropertyTag.PidTagSenderName, (m, val) => { if(m.From == null) m.From = val; } },
+            EpropertyTag.PidTagSubjectW,
+            EpropertyTag.PidTagDisplayCcW,
+            EpropertyTag.PidTagDisplayToW,
+            EpropertyTag.PidTagMessageFlags,
+            EpropertyTag.PidTagSentRepresentingNameW,
+            EpropertyTag.PidTagClientSubmitTime,
+            EpropertyTag.PidTagMessageDeliveryTime,
+            EpropertyTag.PidTagLastModificationTime,
         };
 
-        // The properties we read when accessing the contents of a message
-        private static readonly PropertyGetters<Message> pgMessageContent = new PropertyGetters<Message>
+        //private static readonly PropertyGetters<Message> pgMessageDetail4K = new PropertyGetters<Message>
+        //{
+        //    //{EpropertyTag.PidTagSentRepresentingNameW, (m, val) => m.From = val },
+        //    //{EpropertyTag.PidTagSentRepresentingEmailAddress, (m, val) => { if(m.From == null) m.From = val; } },
+        //    //{EpropertyTag.PidTagSenderName, (m, val) => { if(m.From == null) m.From = val; } },
+        //};
+        private static readonly HashSet<EpropertyTag> propMessageDetail4K = new HashSet<EpropertyTag>
         {
-            {EpropertyTag.PidTagNativeBody, (m, val) => m.NativeBody = (BodyType)val },
-            {EpropertyTag.PidTagBody, (m, val) => m.Body = val },
-            //{EpropertyTag.PidTagInternetCodepage, (m, val) => m.InternetCodePage = (int)val },
+            EpropertyTag.PidTagSentRepresentingNameW,
+            EpropertyTag.PidTagSentRepresentingEmailAddress,
+            EpropertyTag.PidTagSenderName,
+        };
+
+        //private static readonly PropertyGetters<Message> pgMessageContent = new PropertyGetters<Message>
+        //{
+        //    {EpropertyTag.PidTagNativeBody, (m, val) => m.NativeBody = (BodyType)val },
+        //    {EpropertyTag.PidTagBody, (m, val) => m.Body = val },
+        //    //{EpropertyTag.PidTagInternetCodepage, (m, val) => m.InternetCodePage = (int)val },
+        //    // In ANSI format, PidTagHtml is called PidTagBodyHtml (though the tag code is the same), because it is a string rather than a binary value
+        //    // Here, we test the type to determine where to put the value 
+        //    {EpropertyTag.PidTagHtml, (m, val) => { if (val is string)  m.BodyHtml = val; else m.Html = val; } },
+        //    {EpropertyTag.PidTagRtfCompressed, (m, val) => m.RtfCompressed = val },
+        //};
+        // The properties we read when accessing the contents of a message
+        private static readonly HashSet<EpropertyTag> propMessageContent = new HashSet<EpropertyTag>
+        {
+            EpropertyTag.PidTagNativeBody,
+            EpropertyTag.PidTagBody,
+            //EpropertyTag.PidTagInternetCodepage, 
             // In ANSI format, PidTagHtml is called PidTagBodyHtml (though the tag code is the same), because it is a string rather than a binary value
             // Here, we test the type to determine where to put the value 
-            {EpropertyTag.PidTagHtml, (m, val) => { if (val is string)  m.BodyHtml = val; else m.Html = val; } },
-            {EpropertyTag.PidTagRtfCompressed, (m, val) => m.RtfCompressed = val },
+            EpropertyTag.PidTagHtml,
+            EpropertyTag.PidTagRtfCompressed,
         };
 
         // The properties we read when accessing the recipient table of a message
@@ -91,6 +132,12 @@ namespace XstReader
             {EpropertyTag.PidTagRecipientType, (r, val) => r.RecipientType = (RecipientType)val },
             {EpropertyTag.PidTagDisplayName, (r, val) => r.DisplayName = val },
             {EpropertyTag.PidTagEmailAddress, (r, val) => r.EmailAddress = val },
+        };
+        private static readonly HashSet<EpropertyTag> propMessageRecipient = new HashSet<EpropertyTag>
+        {
+            EpropertyTag.PidTagRecipientType,
+            EpropertyTag.PidTagDisplayName,
+            EpropertyTag.PidTagEmailAddress,
         };
 
         //The properties we read when accessing a message attached to a message
@@ -105,9 +152,24 @@ namespace XstReader
             //{EpropertyTag.PidTagMessageDeliveryTime, (m, val) => m.Received = val },
             //{EpropertyTag.PidTagLastModificationTime, (m, val) => m.Modified = val },
             {EpropertyTag.PidTagNativeBody, (m, val) => m.NativeBody = (BodyType)val },
-            {EpropertyTag.PidTagBody, (m, val) => m.Body = val },
-            {EpropertyTag.PidTagHtml, (m, val) => { if (val is string)  m.BodyHtml = val; else m.Html = val; } },
-            {EpropertyTag.PidTagRtfCompressed, (m, val) => m.RtfCompressed = val },
+            //{EpropertyTag.PidTagBody, (m, val) => m.Body = val },
+            //{EpropertyTag.PidTagHtml, (m, val) => { if (val is string)  m.BodyHtml = val; else m.Html = val; } },
+            //{EpropertyTag.PidTagRtfCompressed, (m, val) => m.RtfCompressed = val },
+        };
+        private static readonly HashSet<EpropertyTag> propMessageAttachment = new HashSet<EpropertyTag>
+        {
+            EpropertyTag.PidTagSubjectW,
+            EpropertyTag.PidTagDisplayCcW,
+            EpropertyTag.PidTagDisplayToW,
+            EpropertyTag.PidTagMessageFlags,
+            EpropertyTag.PidTagSentRepresentingNameW,
+            EpropertyTag.PidTagClientSubmitTime,
+            EpropertyTag.PidTagMessageDeliveryTime,
+            EpropertyTag.PidTagLastModificationTime,
+            EpropertyTag.PidTagNativeBody,
+            EpropertyTag.PidTagBody,
+            EpropertyTag.PidTagHtml,
+            EpropertyTag.PidTagRtfCompressed,
         };
 
         private static readonly HashSet<EpropertyTag> contentExclusions = new HashSet<EpropertyTag>
@@ -246,12 +308,7 @@ namespace XstReader
             using (var fs = ndb.GetReadStream())
             {
                 // Read the contents properties
-                var subNodeTree = ltp.ReadProperties<Message>(fs, m.Nid, pgMessageContent, m);
-
-                //ILUVADED
-                //// Read all other properties
-                //m.Properties.Clear();
-                //m.Properties.AddRange(ltp.ReadAllProperties(fs, m.Nid, contentExclusions).ToList());
+                var subNodeTree = ltp.ReadProperties(fs, m.Nid, propMessageContent, m);
 
                 ReadMessageTables(fs, subNodeTree, m); //Recipients
             }
@@ -520,7 +577,7 @@ namespace XstReader
 
         private Message Add4KMessageProperties(FileStream fs, Message m)
         {
-            ltp.ReadProperties<Message>(fs, m.Nid, pgMessageDetail4K, m);
+            ltp.ReadProperties(fs, m.Nid, propMessageDetail4K, m);
 
             return m;
         }
